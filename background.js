@@ -1,3 +1,30 @@
+bridgePromiseApi(["scripting"], ["executeScript"]);
+bridgePromiseApi(["storage", "local"], ["remove"]);
+
+function bridgePromiseApi(path, methods) {
+  if (typeof browser === "undefined" || typeof chrome === "undefined") return;
+  const chromeNs = path.reduce((obj, key) => obj?.[key], chrome);
+  const browserNs = path.reduce((obj, key) => obj?.[key], browser);
+  if (!chromeNs || !browserNs) return;
+
+  for (const method of methods) {
+    if (typeof browserNs[method] !== "function") continue;
+    chromeNs[method] = (...args) => {
+      const callback = typeof args[args.length - 1] === "function" ? args.pop() : null;
+      const promise = browserNs[method](...args);
+      if (!callback) return promise;
+      promise.then((value) => callback(value), () => callback());
+      return undefined;
+    };
+  }
+}
+
+// ═══════════════════════════════════
+//  Tab Cleaner
+//  Disabled for this privacy fork. If re-enabled later, add "tabs" and
+//  "alarms" back to manifest permissions and remove the stale-key cleanup.
+// ═══════════════════════════════════
+/*
 const DEFAULT_TIMEOUT_MIN = 5;
 const CHECK_INTERVAL_MIN = 1;
 
@@ -124,12 +151,28 @@ function saveClosedTab(tab) {
     chrome.storage.local.set({ closed_tabs: closed });
   });
 }
+*/
 
 // ═══════════════════════════════════
 //  Redirect Tracer
 // ═══════════════════════════════════
 // { tabId: { chain: [{url, statusCode, statusLine}], finalUrl, finalStatus } }
 const redirectData = {};
+
+function redactUrl(rawUrl) {
+  try {
+    const url = new URL(rawUrl);
+    url.username = "";
+    url.password = "";
+    url.hash = "";
+    for (const key of url.searchParams.keys()) {
+      url.searchParams.set(key, "[redacted]");
+    }
+    return url.toString();
+  } catch {
+    return String(rawUrl || "").split("#")[0];
+  }
+}
 
 // When a new main-frame navigation starts, reset the chain
 chrome.webNavigation.onBeforeNavigate.addListener((details) => {
@@ -145,13 +188,13 @@ chrome.webRequest.onBeforeRedirect.addListener(
       redirectData[details.tabId] = { chain: [], finalUrl: null, finalStatus: null };
     }
     redirectData[details.tabId].chain.push({
-      url: details.url,
+      url: redactUrl(details.url),
       statusCode: details.statusCode,
       statusLine: details.statusLine || "",
-      redirectUrl: details.redirectUrl,
+      redirectUrl: redactUrl(details.redirectUrl),
     });
   },
-  { urls: ["<all_urls>"] }
+  { urls: ["http://*/*", "https://*/*"] }
 );
 
 // Capture final completed request
@@ -161,10 +204,10 @@ chrome.webRequest.onCompleted.addListener(
     if (!redirectData[details.tabId]) {
       redirectData[details.tabId] = { chain: [], finalUrl: null, finalStatus: null };
     }
-    redirectData[details.tabId].finalUrl = details.url;
+    redirectData[details.tabId].finalUrl = redactUrl(details.url);
     redirectData[details.tabId].finalStatus = details.statusCode;
   },
-  { urls: ["<all_urls>"] }
+  { urls: ["http://*/*", "https://*/*"] }
 );
 
 // Clean up on tab close
@@ -211,15 +254,20 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 });
 
-// Set defaults on install
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.local.get(["enabled", "timeoutMin", "exclusions"], (data) => {
-    const defaults = {};
-    if (data.enabled === undefined) defaults.enabled = true;
-    if (data.timeoutMin === undefined) defaults.timeoutMin = DEFAULT_TIMEOUT_MIN;
-    if (data.exclusions === undefined) defaults.exclusions = [];
-    if (Object.keys(defaults).length) {
-      chrome.storage.local.set(defaults);
-    }
-  });
-});
+const DEPRECATED_PRIVATE_KEYS = [
+  "acr_host",
+  "acr_key",
+  "acr_secret",
+  "music_history",
+  "closed_tabs",
+  "enabled",
+  "timeoutMin",
+  "exclusions",
+];
+
+function cleanupDeprecatedPrivateData() {
+  chrome.storage.local.remove(DEPRECATED_PRIVATE_KEYS);
+}
+
+cleanupDeprecatedPrivateData();
+chrome.runtime.onInstalled.addListener(cleanupDeprecatedPrivateData);

@@ -1,5 +1,5 @@
 // ═══════════════════════════════════
-//  superlevels: Cookie Consent Auto-Dismisser
+//  superlevels: Privacy-first Cookie Banner Hider
 //  Based on I-Still-Dont-Care-About-Cookies
 // ═══════════════════════════════════
 (() => {
@@ -72,45 +72,48 @@
   `;
 
   const CLICK_SELECTORS = [
-    "#onetrust-accept-btn-handler",
-    "#accept-recommended-btn-handler",
+    "#onetrust-reject-all-handler",
+    "#onetrust-pc-btn-handler",
     ".onetrust-close-btn-handler",
-    "#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll",
-    "#CybotCookiebotDialogBodyButtonAccept",
-    "#CybotCookiebotDialogBodyLevelButtonAccept",
-    ".cky-btn-accept",
-    "#didomi-notice-agree-button",
+    "#CybotCookiebotDialogBodyButtonDecline",
+    "#CybotCookiebotDialogBodyLevelButtonLevelOptinDeclineAll",
+    "#CybotCookiebotDialogBodyLevelButtonCustomize",
+    ".cky-btn-reject",
+    ".cky-btn-close",
     ".didomi-continue-without-agreeing",
-    ".qc-cmp2-summary-buttons button[mode='primary']",
-    ".qc-cmp-button[mode='primary']",
-    ".fc-cta-consent .fc-primary-button",
-    ".cc-accept", ".cc-btn.cc-dismiss", ".cc-allow",
-    "[data-cookiefirst-action='accept']",
-    ".cookie-accept", ".js-cookie-accept",
-    ".agree-button", "#agree-button",
-    ".cli-plugin-accept-btn",
+    "#didomi-notice-disagree-button",
+    ".qc-cmp2-summary-buttons button[mode='secondary']",
+    ".qc-cmp-button[mode='secondary']",
+    ".fc-cta-consent .fc-secondary-button",
+    ".cc-deny", ".cc-btn.cc-dismiss",
+    "[data-cookiefirst-action='reject']",
+    ".cookie-reject", ".js-cookie-reject",
+    ".decline-button", "#decline-button",
+    ".cli_settings_button",
+    ".cli-plugin-main-button",
     "#cookie_action_close_header",
-    ".eupopup-button_1",
-    "#eu-cookie-compliance-accept",
-    ".iubenda-cs-accept-btn",
-    "[data-action='accept']",
-    ".osano-cm-accept-all",
-    ".accept-cookies-button",
-    "button[data-gdpr='accept']",
-    ".js-accept-cookies",
-    ".cmplz-btn.cmplz-accept",
-    ".snigel-cmp-accept-all",
-    'button[title="Accept" i]',
-    'button[title="Accept all" i]',
-    'button[title="Accept All" i]',
-    'button[title="Allow all" i]',
-    'button[title="Allow All" i]',
-    'button[title="Agree" i]',
-    '[aria-label="Accept" i]',
-    '[aria-label="Accept all" i]',
-    '[aria-label="Accept cookies" i]',
-    '[aria-label="Allow all" i]',
-    '[aria-label="Agree" i]',
+    ".eupopup-closebutton",
+    "#eu-cookie-compliance-reject",
+    ".iubenda-cs-reject-btn",
+    "[data-action='reject']",
+    ".osano-cm-denyAll",
+    ".reject-cookies-button",
+    "button[data-gdpr='reject']",
+    ".js-reject-cookies",
+    ".cmplz-btn.cmplz-deny",
+    ".snigel-cmp-reject-all",
+    'button[title="Reject" i]',
+    'button[title="Reject all" i]',
+    'button[title="Decline" i]',
+    'button[title="Decline all" i]',
+    'button[title="Necessary only" i]',
+    'button[title="Essential only" i]',
+    '[aria-label="Reject" i]',
+    '[aria-label="Reject all" i]',
+    '[aria-label="Decline" i]',
+    '[aria-label="Decline all" i]',
+    '[aria-label="Necessary only" i]',
+    '[aria-label="Essential only" i]',
     '[aria-label="Close" i][class*="cookie" i]',
     '[aria-label="Close" i][class*="consent" i]',
   ];
@@ -151,7 +154,7 @@
 
   // Check storage and apply
   chrome.storage.local.get(["nocookie_enabled"], (data) => {
-    if (data.nocookie_enabled !== false) activate();
+    if (data.nocookie_enabled === true) activate();
   });
 
   // Listen for toggle from popup

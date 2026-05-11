@@ -1,12 +1,8 @@
-# 🚀 superlevels
+# 🚀 SuperLevels Privacy Fork
 
-by [@levelsio](https://x.com/levelsio)
+This is a privacy-hardened fork of SuperLevels, tuned for Brave on Windows and Firefox on Linux Mint.
 
-[![GitHub stars](https://img.shields.io/github/stars/levelsio/superlevels?style=social)](https://github.com/levelsio/superlevels/stargazers)
-
-Please star SuperLevels if you like it!
-
-A super Chrome extension that replaces 12+ separate extensions with one open-source, privacy-respecting package.
+A browser extension that replaces several separate extensions with one open-source, auditable package.
 
 Most Chrome extensions are closed-source malware/spyware-filled garbage that form a massive security risk. This one is open source and you can read and check the source code (with AI) before you install it, and customize it to your liking!
 
@@ -25,10 +21,20 @@ Before installing any Chrome extension, you should verify it's safe. This extens
 
 You should do this for **every** Chrome extension you use. Most extensions are closed-source and can't be audited — this one can.
 
+## Privacy Hardening In This Fork
+
+- Removed music recognition, ACRCloud upload code, stored ACR credentials, and the `tabCapture` permission.
+- Disabled Tab Cleaner and its recently closed URL history. The code is commented for later restoration.
+- Removed Google Search/Images injections, including Google Maps links and View Image.
+- Limited page access to `http://*/*` and `https://*/*` instead of `<all_urls>`.
+- Made cookie banner handling opt-in and reject/necessary/close-first instead of accept-all.
+- Redacted redirect query-string values before showing or copying redirect chains.
+- Disabled local pushes to the original upstream remote; pushes go to this fork through `origin`.
+
 ## Features
 
 ### 🚮 Tab Cleaner
-Automatically closes inactive tabs after a configurable timeout (default: 5 minutes). Set excluded hosts to keep important tabs alive. View and re-open recently closed tabs.
+Disabled in this fork. The code is kept commented for later restoration, but it no longer runs, closes tabs, or stores recently closed URLs.
 
 ### 🍪 Cookie Editor
 Full cookie manager for the current site. View, edit, add, and delete cookies. Export cookies as JSON. Expand any cookie to see and modify all fields including domain, path, SameSite, secure, and httpOnly flags.
@@ -45,8 +51,8 @@ Custom dim theme for X/Twitter with 7 color palettes: Dim, Slate, Jade, Plum, Du
 ### ⚡ JS Toggle
 Disable JavaScript per-site with one click. Useful for debugging, reading articles without popups, or testing progressive enhancement. Page reloads automatically.
 
-### 🚫 GDPR Cookie Consent Dismisser
-Auto-hides and auto-clicks cookie consent banners. Supports OneTrust, CookieBot, Didomi, Quantcast, GDPR plugins, and dozens more frameworks. Toggle off if a site breaks.
+### 🚫 GDPR Cookie Banner Hider
+Off by default. When enabled, hides cookie banners and prefers reject, decline, necessary-only, or close buttons instead of accept-all actions.
 
 ### 🎨 Live CSS Editor
 Write custom CSS for any website, applied in real-time as you type. Saved per-domain. Supports tab key for indentation.
@@ -54,36 +60,36 @@ Write custom CSS for any website, applied in real-time as you type. Saved per-do
 ### 📺 YouTube Unhook
 Removes YouTube distractions: no homepage feed, no sidebar suggestions, no end screen overlays, no Shorts. Search still works — just no algorithmic recommendations.
 
-### 🎵 Music Recognizer
-Shazam-like music identification for any tab. Captures 10 seconds of audio and identifies the song via [ACRCloud](https://www.acrcloud.com/sign-up/) (free signup, bring your own API key). Results link to YouTube. History of recognized songs.
-
 ### 🖼 Picture-in-Picture
 Pop the largest video on the current tab into a floating PiP window with one click.
-
-### 🗺 Google Maps Links
-Re-adds clickable Maps links and map preview cards to Google Search results.
-
-### 🖼 View Image
-Adds a "View Image" button back to Google Images, linking directly to the full-size original image.
 
 ### {} JSON Formatter
 Auto-detects pure JSON response pages and formats them with syntax highlighting, collapsible sections, and a dark theme. Copy or view raw with one click. Never triggers on regular HTML pages.
 
 ## Install
 
+### Brave / Chromium
+
 1. Download or clone this repo
-2. Open Chrome and go to `chrome://extensions/`
-3. Click **Manage Extensions** if you're not already there
-4. Enable **Developer mode** (toggle in the top right corner)
-5. Click **Load unpacked**
-6. Select the `superlevels` folder
-7. The 🚀 icon appears in your toolbar — you're done!
+2. Open Brave and go to `brave://extensions/`
+3. Enable **Developer mode**
+4. Click **Load unpacked**
+5. Select the `superlevels` folder
+
+### Firefox
+
+1. Open Firefox and go to `about:debugging#/runtime/this-firefox`
+2. Click **Load Temporary Add-on...**
+3. Select `manifest.json` from this folder
+
+Firefox support is best-effort for this MV3 fork. Most features use standard WebExtension APIs; the JS toggle may be unavailable if `contentSettings.javascript` is not exposed by your Firefox build.
 
 ## Privacy
 
-- **No data collection.** Everything stays local in `chrome.storage.local`.
+- **No data collection.** Settings stay local in `chrome.storage.local`.
 - **No analytics, no tracking, no phone-home.**
-- The only external network request is the Music Recognizer, which sends a short audio clip to ACRCloud — and only when you explicitly click "Listen" and provide your own API keys.
+- Music recognition, ACRCloud upload, tab audio capture, Google Search/Images injection, and tab-cleaner URL history are removed or disabled in this fork.
+- Redirect tracing redacts query-string values before showing or copying URLs.
 - All source code is right here. Read it, audit it, fork it.
 
 ## License

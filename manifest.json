@@ -1,23 +1,26 @@
 {
   "manifest_version": 3,
-  "name": "🚀 SuperLevels",
-  "version": "2.0",
-  "description": "The super Chrome extension by @levelsio — dark mode, GDPR cookie dismisser, YouTube unhook, tab cleaner, cookie editor, redirect tracer, live CSS editor, X/Twitter dim mode, JS toggle, JSON formatter, music recognizer, picture-in-picture, Google Maps links, and view image.",
-  "permissions": ["tabs", "storage", "alarms", "cookies", "activeTab", "webRequest", "webNavigation", "tabCapture", "contentSettings", "scripting"],
-  "host_permissions": ["<all_urls>"],
+  "name": "🚀 SuperLevels Privacy Fork",
+  "version": "2.1",
+  "description": "Privacy-hardened SuperLevels fork with dark mode, cookie editor, redirect tracer, live CSS editor, X/Twitter focus tools, JS toggle, GDPR banner hider, YouTube unhook, JSON formatter, and picture-in-picture.",
+  "permissions": ["storage", "cookies", "activeTab", "webRequest", "webNavigation", "contentSettings", "scripting"],
+  "host_permissions": ["http://*/*", "https://*/*"],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'"
+  },
   "background": {
     "service_worker": "background.js"
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "🚀 superlevels"
+    "default_title": "🚀 SuperLevels Privacy Fork"
   },
   "content_scripts": [{
-    "matches": ["<all_urls>"],
+    "matches": ["http://*/*", "https://*/*"],
     "js": ["darkmode.js", "nocookie.js", "livecss.js"],
     "run_at": "document_start"
   }, {
-    "matches": ["<all_urls>"],
+    "matches": ["http://*/*", "https://*/*"],
     "js": ["jsonformat.js"],
     "run_at": "document_end"
   }, {
@@ -28,14 +31,6 @@
     "matches": ["*://x.com/*", "*://twitter.com/*", "*://mobile.x.com/*", "*://mobile.twitter.com/*"],
     "js": ["xdim.js", "xunhook.js"],
     "run_at": "document_start"
-  }, {
-    "matches": ["*://www.google.com/*", "*://www.google.co.uk/*", "*://www.google.co.jp/*", "*://www.google.co.in/*", "*://www.google.co.kr/*", "*://www.google.co.id/*", "*://www.google.com.br/*", "*://www.google.com.au/*", "*://www.google.com.mx/*", "*://www.google.de/*", "*://www.google.fr/*", "*://www.google.es/*", "*://www.google.it/*", "*://www.google.nl/*", "*://www.google.pt/*", "*://www.google.pl/*", "*://www.google.se/*", "*://www.google.ca/*", "*://www.google.ru/*"],
-    "js": ["gmaps.js"],
-    "run_at": "document_end"
-  }, {
-    "matches": ["*://www.google.com/*", "*://www.google.co.uk/*", "*://www.google.co.jp/*", "*://www.google.co.in/*", "*://www.google.co.kr/*", "*://www.google.co.id/*", "*://www.google.com.br/*", "*://www.google.com.au/*", "*://www.google.com.mx/*", "*://www.google.de/*", "*://www.google.fr/*", "*://www.google.es/*", "*://www.google.it/*", "*://www.google.nl/*", "*://www.google.pt/*", "*://www.google.pl/*", "*://www.google.se/*", "*://www.google.ca/*", "*://www.google.ru/*"],
-    "js": ["viewimage.js"],
-    "run_at": "document_end"
   }],
   "icons": {
     "16": "icon16.png",
