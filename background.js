@@ -1,21 +1,51 @@
-bridgePromiseApi(["scripting"], ["executeScript"]);
-bridgePromiseApi(["storage", "local"], ["remove"]);
+normalizeExtensionApi(["scripting"], ["executeScript"]);
+normalizeExtensionApi(["storage", "local"], ["remove"]);
 
-function bridgePromiseApi(path, methods) {
-  if (typeof browser === "undefined" || typeof chrome === "undefined") return;
+function normalizeExtensionApi(path, methods) {
+  if (typeof chrome === "undefined") return;
   const chromeNs = path.reduce((obj, key) => obj?.[key], chrome);
-  const browserNs = path.reduce((obj, key) => obj?.[key], browser);
-  if (!chromeNs || !browserNs) return;
+  const browserNs =
+    typeof browser !== "undefined" ? path.reduce((obj, key) => obj?.[key], browser) : null;
+  if (!chromeNs) return;
 
   for (const method of methods) {
-    if (typeof browserNs[method] !== "function") continue;
-    chromeNs[method] = (...args) => {
+    if (chromeNs[method]?.__superlevelsPromiseWrapped) continue;
+    const browserMethod = browserNs && typeof browserNs[method] === "function"
+      ? browserNs[method].bind(browserNs)
+      : null;
+    const chromeMethod = typeof chromeNs[method] === "function" ? chromeNs[method].bind(chromeNs) : null;
+    const sourceMethod = browserMethod || chromeMethod;
+    if (!sourceMethod) continue;
+
+    const wrapped = (...args) => {
       const callback = typeof args[args.length - 1] === "function" ? args.pop() : null;
-      const promise = browserNs[method](...args);
-      if (!callback) return promise;
-      promise.then((value) => callback(value), () => callback());
-      return undefined;
+
+      if (browserMethod) {
+        const promise = browserMethod(...args);
+        if (!callback) return promise;
+        promise.then((value) => callback(value), () => callback());
+        return undefined;
+      }
+
+      if (callback) {
+        chromeMethod(...args, (...callbackArgs) => callback(...callbackArgs));
+        return undefined;
+      }
+
+      return new Promise((resolve, reject) => {
+        chromeMethod(...args, (...callbackArgs) => {
+          const error = chrome.runtime?.lastError;
+          if (error) {
+            reject(new Error(error.message || String(error)));
+            return;
+          }
+          resolve(callbackArgs.length > 1 ? callbackArgs : callbackArgs[0]);
+        });
+      });
     };
+
+    Object.defineProperty(wrapped, "__superlevelsPromiseWrapped", { value: true });
+    chromeNs[method] = wrapped;
   }
 }
 
@@ -266,7 +296,7 @@ const DEPRECATED_PRIVATE_KEYS = [
 ];
 
 function cleanupDeprecatedPrivateData() {
-  chrome.storage.local.remove(DEPRECATED_PRIVATE_KEYS);
+  chrome.storage.local.remove(DEPRECATED_PRIVATE_KEYS).catch(() => {});
 }
 
 cleanupDeprecatedPrivateData();

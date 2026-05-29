@@ -1,23 +1,54 @@
-bridgePromiseApi(["storage", "local"], ["get", "set", "remove"]);
-bridgePromiseApi(["tabs"], ["query", "sendMessage", "create", "reload"]);
-bridgePromiseApi(["cookies"], ["getAll", "remove", "set"]);
-bridgePromiseApi(["runtime"], ["sendMessage"]);
+normalizeExtensionApi(["storage", "local"], ["get", "set", "remove"]);
+normalizeExtensionApi(["tabs"], ["query", "sendMessage", "create", "reload"]);
+normalizeExtensionApi(["cookies"], ["getAll", "remove", "set"]);
+normalizeExtensionApi(["runtime"], ["sendMessage"]);
+normalizeExtensionApi(["contentSettings", "javascript"], ["get", "set"]);
 
-function bridgePromiseApi(path, methods) {
-  if (typeof browser === "undefined" || typeof chrome === "undefined") return;
+function normalizeExtensionApi(path, methods) {
+  if (typeof chrome === "undefined") return;
   const chromeNs = path.reduce((obj, key) => obj?.[key], chrome);
-  const browserNs = path.reduce((obj, key) => obj?.[key], browser);
-  if (!chromeNs || !browserNs) return;
+  const browserNs =
+    typeof browser !== "undefined" ? path.reduce((obj, key) => obj?.[key], browser) : null;
+  if (!chromeNs) return;
 
   for (const method of methods) {
-    if (typeof browserNs[method] !== "function") continue;
-    chromeNs[method] = (...args) => {
+    if (chromeNs[method]?.__superlevelsPromiseWrapped) continue;
+    const browserMethod = browserNs && typeof browserNs[method] === "function"
+      ? browserNs[method].bind(browserNs)
+      : null;
+    const chromeMethod = typeof chromeNs[method] === "function" ? chromeNs[method].bind(chromeNs) : null;
+    const sourceMethod = browserMethod || chromeMethod;
+    if (!sourceMethod) continue;
+
+    const wrapped = (...args) => {
       const callback = typeof args[args.length - 1] === "function" ? args.pop() : null;
-      const promise = browserNs[method](...args);
-      if (!callback) return promise;
-      promise.then((value) => callback(value), () => callback());
-      return undefined;
+
+      if (browserMethod) {
+        const promise = browserMethod(...args);
+        if (!callback) return promise;
+        promise.then((value) => callback(value), () => callback());
+        return undefined;
+      }
+
+      if (callback) {
+        chromeMethod(...args, (...callbackArgs) => callback(...callbackArgs));
+        return undefined;
+      }
+
+      return new Promise((resolve, reject) => {
+        chromeMethod(...args, (...callbackArgs) => {
+          const error = chrome.runtime?.lastError;
+          if (error) {
+            reject(new Error(error.message || String(error)));
+            return;
+          }
+          resolve(callbackArgs.length > 1 ? callbackArgs : callbackArgs[0]);
+        });
+      });
     };
+
+    Object.defineProperty(wrapped, "__superlevelsPromiseWrapped", { value: true });
+    chromeNs[method] = wrapped;
   }
 }
 
@@ -42,7 +73,7 @@ function switchToPage(page) {
   if (page === "unhook") loadUnhook();
   if (page === "xunhook") loadXUnhook();
   if (page === "jsonformat") loadJsonFormat();
-  chrome.storage.local.set({ last_tab: page });
+  chrome.storage.local.set({ last_tab: page }).catch(() => {});
   return true;
 }
 
@@ -477,10 +508,10 @@ document.getElementById("btnRedirectRefresh").addEventListener("click", () => lo
 
 document.getElementById("btnRedirectCopy").addEventListener("click", async () => {
   if (!lastRedirectText) return;
-  await navigator.clipboard.writeText(lastRedirectText);
   const btn = document.getElementById("btnRedirectCopy");
   const orig = btn.querySelector("span").textContent;
-  btn.querySelector("span").textContent = "Copied!";
+  const copied = await copyText(lastRedirectText);
+  btn.querySelector("span").textContent = copied ? "Copied!" : "Copy failed";
   setTimeout(() => { btn.querySelector("span").textContent = orig; }, 1500);
 });
 
@@ -820,33 +851,81 @@ const jsIndicator = document.getElementById("jsIndicator");
 const jsHostLabel = document.getElementById("jsHostLabel");
 
 let jsHost = "";
+let jsActiveTabUrl = "";
+let jsLastEnabled = true;
+
+function parseHttpTabUrl(tab) {
+  try {
+    const url = new URL(tab?.url || "");
+    if (url.protocol === "http:" || url.protocol === "https:") return url;
+  } catch {}
+  return null;
+}
+
+function hasJsContentSettingsApi() {
+  return Boolean(
+    chrome.contentSettings &&
+    chrome.contentSettings.javascript &&
+    typeof chrome.contentSettings.javascript.get === "function" &&
+    typeof chrome.contentSettings.javascript.set === "function"
+  );
+}
+
+function formatExtensionError(err) {
+  const message = err?.message || String(err || "");
+  return message || "blocked by browser policy";
+}
+
+function showJsUnavailable(message) {
+  jsToggle.disabled = true;
+  jsToggle.checked = false;
+  jsToggle.title = message;
+  updateJsUI(false, "UNAVAILABLE");
+  jsHostLabel.textContent = message;
+}
+
+function jsPatternsForHost(host) {
+  return [`https://${host}/*`, `http://${host}/*`];
+}
 
 async function loadJsToggle() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab || !tab.url) return;
+  const tabUrl = parseHttpTabUrl(tab);
 
-  try { jsHost = new URL(tab.url).hostname; } catch { jsHost = ""; }
-  jsHostLabel.textContent = jsHost || "No accessible page";
+  jsHost = tabUrl?.hostname || "";
+  jsActiveTabUrl = tabUrl?.href || "";
 
-  if (!jsHost) return;
-
-  if (!chrome.contentSettings || !chrome.contentSettings.javascript) {
-    jsToggle.disabled = true;
-    jsHostLabel.textContent = `${jsHost} (JS toggle unsupported here)`;
-    updateJsUI(false);
+  if (!tabUrl || !jsHost) {
+    showJsUnavailable("Open an http:// or https:// page to use the JS toggle");
     return;
   }
-  jsToggle.disabled = false;
-  const pattern = `https://${jsHost}/*`;
-  chrome.contentSettings.javascript.get({ primaryUrl: pattern }, (details) => {
-    const enabled = details.setting === "allow";
+
+  jsHostLabel.textContent = jsHost;
+  jsToggle.title = "";
+
+  if (!hasJsContentSettingsApi()) {
+    showJsUnavailable(`${jsHost} (JS toggle unsupported in this browser/profile)`);
+    return;
+  }
+
+  try {
+    const details = await chrome.contentSettings.javascript.get({ primaryUrl: jsActiveTabUrl });
+    const enabled = details?.setting !== "block";
+    const managed = details?.source === "policy";
+
     jsToggle.checked = enabled;
+    jsToggle.disabled = managed;
+    jsToggle.title = managed ? "This JavaScript setting is managed by your organization" : "";
+    jsHostLabel.textContent = managed ? `${jsHost} (managed by organization)` : jsHost;
+    jsLastEnabled = enabled;
     updateJsUI(enabled);
-  });
+  } catch (err) {
+    showJsUnavailable(`${jsHost} (${formatExtensionError(err)})`);
+  }
 }
 
-function updateJsUI(enabled) {
-  jsStatus.textContent = enabled ? "ENABLED" : "DISABLED";
+function updateJsUI(enabled, label) {
+  jsStatus.textContent = label || (enabled ? "ENABLED" : "DISABLED");
   jsStatus.className = "status " + (enabled ? "on" : "off");
   jsIndicator.className = "indicator " + (enabled ? "on" : "off");
 }
@@ -855,21 +934,36 @@ jsToggle.addEventListener("change", async () => {
   const enabled = jsToggle.checked;
   updateJsUI(enabled);
 
-  if (!chrome.contentSettings || !chrome.contentSettings.javascript) return;
-  const pattern = `https://${jsHost}/*`;
-  chrome.contentSettings.javascript.set({
-    primaryPattern: pattern,
-    setting: enabled ? "allow" : "block",
-  });
-  // Also set for http
-  chrome.contentSettings.javascript.set({
-    primaryPattern: `http://${jsHost}/*`,
-    setting: enabled ? "allow" : "block",
-  });
+  if (!jsHost || !hasJsContentSettingsApi()) {
+    await loadJsToggle();
+    return;
+  }
 
-  // Reload the tab so the change takes effect
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (tab) chrome.tabs.reload(tab.id);
+  jsToggle.disabled = true;
+  let failed = false;
+
+  try {
+    for (const primaryPattern of jsPatternsForHost(jsHost)) {
+      await chrome.contentSettings.javascript.set({
+        primaryPattern,
+        setting: enabled ? "allow" : "block",
+      });
+    }
+
+    jsLastEnabled = enabled;
+
+    // Reload the tab so the change takes effect.
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab) await chrome.tabs.reload(tab.id);
+  } catch (err) {
+    failed = true;
+    jsToggle.checked = jsLastEnabled;
+    jsToggle.title = "This JavaScript setting could not be changed";
+    jsHostLabel.textContent = `${jsHost} (${formatExtensionError(err)})`;
+    updateJsUI(jsLastEnabled, "MANAGED");
+  } finally {
+    if (!failed) jsToggle.disabled = false;
+  }
 });
 
 // ═══════════════════════════════════
@@ -954,4 +1048,29 @@ function esc(s) {
 }
 function escA(s) {
   return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/'/g, "&#39;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+async function copyText(text) {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {}
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+
+  try {
+    return document.execCommand("copy");
+  } catch {
+    return false;
+  } finally {
+    textarea.remove();
+  }
 }

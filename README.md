@@ -1,6 +1,6 @@
 # 🚀 SuperLevels Privacy Fork
 
-This is a privacy-hardened fork of SuperLevels, tuned for Brave on Windows and Firefox on Linux Mint.
+This is a privacy-hardened fork of SuperLevels, tuned for Brave, Microsoft Edge, and Firefox.
 
 A browser extension that replaces several separate extensions with one open-source, auditable package.
 
@@ -68,13 +68,18 @@ Auto-detects pure JSON response pages and formats them with syntax highlighting,
 
 ## Install
 
-### Brave / Chromium
+### Brave / Chromium / Microsoft Edge
 
 1. Download or clone this repo
-2. Open Brave and go to `brave://extensions/`
+2. Open your browser's extensions page:
+   - Brave: `brave://extensions/`
+   - Microsoft Edge: `edge://extensions/`
+   - Chrome / Chromium: `chrome://extensions/`
 3. Enable **Developer mode**
 4. Click **Load unpacked**
 5. Select the `superlevels` folder
+
+In managed Microsoft Edge profiles, your organization can block unpacked extensions, force extension allowlists, or lock the JavaScript content setting. When that happens, the extension now reports the blocked/managed state instead of failing silently. The reliable fix for policy blocks is still an IT allowlist or policy change.
 
 ### Firefox
 

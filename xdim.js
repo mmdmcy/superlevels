@@ -20,6 +20,14 @@ const THEMES = {
 let _theme = "dim";
 let _customHue = 210;
 
+function getLocalPreference(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
 function paletteFromHue(h, s) {
   const bSat = Math.round(s * 0.47);
   return {
@@ -191,7 +199,7 @@ function ensureBaseCSS() {
 ensureBaseCSS();
 
 // Optimistic early apply
-if (localStorage.getItem("__xdm_enabled") !== "0" &&
+if (getLocalPreference("__xdm_enabled") !== "0" &&
     (!window.matchMedia || window.matchMedia("(prefers-color-scheme: dark)").matches)) {
   document.documentElement.classList.add(DIM_CLASS);
 }

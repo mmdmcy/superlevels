@@ -184,7 +184,7 @@
     `;
 
     // Replace body content
-    document.head.appendChild(style);
+    (document.head || document.documentElement).appendChild(style);
     document.body.innerHTML = "";
 
     // Toolbar
@@ -193,11 +193,10 @@
 
     const copyBtn = document.createElement("button");
     copyBtn.textContent = "Copy";
-    copyBtn.addEventListener("click", () => {
-      navigator.clipboard.writeText(JSON.stringify(parsed, null, 2)).then(() => {
-        copyBtn.textContent = "Copied!";
-        setTimeout(() => { copyBtn.textContent = "Copy"; }, 1500);
-      });
+    copyBtn.addEventListener("click", async () => {
+      const copied = await copyText(JSON.stringify(parsed, null, 2));
+      copyBtn.textContent = copied ? "Copied!" : "Copy failed";
+      setTimeout(() => { copyBtn.textContent = "Copy"; }, 1500);
     });
 
     const rawBtn = document.createElement("button");
@@ -253,6 +252,31 @@
   function removeFormat() {
     const el = document.getElementById(STYLE_ID);
     if (el) el.remove();
+  }
+
+  async function copyText(text) {
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {}
+    }
+
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.left = "-9999px";
+    document.body.appendChild(textarea);
+    textarea.select();
+
+    try {
+      return document.execCommand("copy");
+    } catch {
+      return false;
+    } finally {
+      textarea.remove();
+    }
   }
 
   // Check storage and apply
