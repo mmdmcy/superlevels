@@ -3,7 +3,7 @@
   "name": "🚀 SuperLevels Privacy Fork",
   "version": "2.1",
   "description": "Privacy-hardened SuperLevels fork with dark mode, cookie editor, redirect tracer, live CSS editor, X/Twitter focus tools, JS toggle, GDPR banner hider, YouTube unhook, JSON formatter, and picture-in-picture.",
-  "permissions": ["storage", "cookies", "activeTab", "webRequest", "webNavigation", "contentSettings", "scripting"],
+  "permissions": ["storage", "cookies", "webRequest", "webNavigation", "contentSettings", "scripting"],
   "host_permissions": ["http://*/*", "https://*/*"],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'"
@@ -17,24 +17,7 @@
   },
   "content_scripts": [{
     "matches": ["http://*/*", "https://*/*"],
-    "js": ["darkmode.js", "nocookie.js", "livecss.js"],
+    "js": ["content.js"],
     "run_at": "document_start"
-  }, {
-    "matches": ["http://*/*", "https://*/*"],
-    "js": ["jsonformat.js"],
-    "run_at": "document_end"
-  }, {
-    "matches": ["*://www.youtube.com/*", "*://m.youtube.com/*"],
-    "js": ["unhook.js"],
-    "run_at": "document_start"
-  }, {
-    "matches": ["*://x.com/*", "*://twitter.com/*", "*://mobile.x.com/*", "*://mobile.twitter.com/*"],
-    "js": ["xdim.js", "xunhook.js"],
-    "run_at": "document_start"
-  }],
-  "icons": {
-    "16": "icon16.png",
-    "48": "icon48.png",
-    "128": "icon128.png"
-  }
+  }]
 }

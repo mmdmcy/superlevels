@@ -58,103 +58,6 @@
       margin-bottom: 8px;
     }
 
-    /* ── Tab Cleaner ── */
-    .toggle-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 12px;
-      padding: 8px 12px;
-      background: #16213e;
-      border-radius: 8px;
-    }
-    .toggle-row label { font-size: 13px; font-weight: 500; }
-    .switch { position: relative; width: 40px; height: 22px; }
-    .switch input { opacity: 0; width: 0; height: 0; }
-    .slider {
-      position: absolute; inset: 0;
-      background: #444; border-radius: 22px;
-      cursor: pointer; transition: background 0.2s;
-    }
-    .slider::before {
-      content: ''; position: absolute;
-      width: 16px; height: 16px; left: 3px; bottom: 3px;
-      background: #fff; border-radius: 50%;
-      transition: transform 0.2s;
-    }
-    .switch input:checked + .slider { background: #e94560; }
-    .switch input:checked + .slider::before { transform: translateX(18px); }
-    .timeout-row {
-      display: flex; align-items: center; gap: 8px;
-      margin-bottom: 14px; padding: 8px 12px;
-      background: #16213e; border-radius: 8px; font-size: 13px;
-    }
-    .timeout-row input {
-      width: 56px; padding: 4px 6px;
-      border: 1px solid #333; border-radius: 6px;
-      background: #0f3460; color: #fff;
-      font-size: 13px; text-align: center;
-    }
-    .timeout-row input:focus { outline: none; border-color: #e94560; }
-    .add-row {
-      display: flex; gap: 6px; margin-bottom: 10px;
-    }
-    .add-row input {
-      flex: 1; padding: 7px 10px;
-      border: 1px solid #333; border-radius: 6px;
-      background: #0f3460; color: #fff; font-size: 13px;
-    }
-    .add-row input::placeholder { color: #666; }
-    .add-row input:focus { outline: none; border-color: #e94560; }
-    .add-row button {
-      padding: 7px 14px; background: #e94560; color: #fff;
-      border: none; border-radius: 6px;
-      font-size: 13px; font-weight: 600; cursor: pointer;
-    }
-    .add-row button:hover { background: #c73650; }
-    .exc-list .item {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 6px 10px; background: #16213e;
-      border-radius: 6px; margin-bottom: 4px; font-size: 13px;
-    }
-    .exc-list .item span { word-break: break-all; }
-    .exc-list .item button {
-      background: none; border: none; color: #e94560;
-      font-size: 16px; cursor: pointer; padding: 0 4px; line-height: 1;
-    }
-    .exc-list .item button:hover { color: #ff6b81; }
-    .closed-section { margin-top: 14px; }
-    .closed-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 6px;
-    }
-    .closed-header button {
-      background: none; border: none; color: #e94560;
-      font-size: 11px; cursor: pointer;
-    }
-    .closed-item {
-      display: flex; align-items: center; gap: 8px;
-      padding: 7px 10px; background: #16213e;
-      border-radius: 6px; margin-bottom: 4px;
-      cursor: pointer; transition: background 0.15s;
-    }
-    .closed-item:hover { background: #1b2a4a; }
-    .closed-item .favicon {
-      width: 16px; height: 16px; border-radius: 2px;
-      flex-shrink: 0; background: #0f3460;
-    }
-    .closed-item .closed-title {
-      flex: 1; font-size: 12px; min-width: 0;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .closed-item .closed-time {
-      font-size: 10px; color: #555; flex-shrink: 0;
-    }
-    .closed-item .reopen {
-      background: none; border: none; color: #e94560;
-      font-size: 13px; cursor: pointer; flex-shrink: 0;
-      padding: 0 2px;
-    }
     .empty {
       color: #555; font-size: 12px; text-align: center; padding: 12px;
     }
@@ -613,8 +516,6 @@
 
   <!-- Nav -->
   <div class="nav">
-    <!-- Tab Cleaner disabled in this privacy fork; restore with its page, JS, background code, and manifest permissions. -->
-    <!-- <button data-page="tabcleaner">🚮 Tabs</button> -->
     <button class="active" data-page="cookies">🍪 Cookies</button>
     <button data-page="redirects">🔀 Redirects</button>
     <button data-page="darkmode">🌙 Dark</button>
@@ -627,32 +528,6 @@
     <button data-page="pip">🖼 PiP</button>
     <button data-page="jsonformat">{} JSON</button>
   </div>
-
-  <template id="disabled-tabcleaner-page">
-  <div class="page" id="page-tabcleaner">
-    <div class="page-body">
-      <div class="toggle-row">
-        <label>Auto-close enabled</label>
-        <label class="switch">
-          <input type="checkbox" id="enabled">
-          <span class="slider"></span>
-        </label>
-      </div>
-      <div class="timeout-row">
-        <label>Close after</label>
-        <input type="number" id="timeout" min="1" max="1440" value="5">
-        <span>minutes of inactivity</span>
-      </div>
-      <h2>Excluded Hosts</h2>
-      <div class="add-row">
-        <input type="text" id="hostInput" placeholder="e.g. example.com">
-        <button id="addBtn">Add</button>
-      </div>
-      <div class="exc-list" id="list"></div>
-      <div class="closed-section" id="closedSection"></div>
-    </div>
-  </div>
-  </template>
 
   <!-- ═══ Cookie Editor Page ═══ -->
   <div class="page active" id="page-cookies">

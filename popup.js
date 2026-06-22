@@ -1,5 +1,5 @@
 normalizeExtensionApi(["storage", "local"], ["get", "set", "remove"]);
-normalizeExtensionApi(["tabs"], ["query", "sendMessage", "create", "reload"]);
+normalizeExtensionApi(["tabs"], ["query", "sendMessage", "reload"]);
 normalizeExtensionApi(["cookies"], ["getAll", "remove", "set"]);
 normalizeExtensionApi(["runtime"], ["sendMessage"]);
 normalizeExtensionApi(["contentSettings", "javascript"], ["get", "set"]);
@@ -87,121 +87,6 @@ chrome.storage.local.get(["last_tab"], (data) => {
     switchToPage("cookies");
   }
 });
-
-// ═══════════════════════════════════
-//  Tab Cleaner
-//  Disabled for this privacy fork. Kept here commented so it can be restored
-//  later together with the background Tab Cleaner block and manifest permissions.
-// ═══════════════════════════════════
-/*
-const enabledEl = document.getElementById("enabled");
-const timeoutEl = document.getElementById("timeout");
-const hostInput = document.getElementById("hostInput");
-const addBtn = document.getElementById("addBtn");
-const listEl = document.getElementById("list");
-
-chrome.storage.local.get(["enabled", "timeoutMin", "exclusions"], (data) => {
-  enabledEl.checked = data.enabled !== false;
-  timeoutEl.value = data.timeoutMin || 5;
-  renderExclusionList(data.exclusions || []);
-});
-
-enabledEl.addEventListener("change", () => {
-  chrome.storage.local.set({ enabled: enabledEl.checked });
-});
-
-timeoutEl.addEventListener("change", () => {
-  const val = Math.max(1, Math.min(1440, parseInt(timeoutEl.value) || 5));
-  timeoutEl.value = val;
-  chrome.storage.local.set({ timeoutMin: val });
-});
-
-function addHost() {
-  let host = hostInput.value.trim().toLowerCase();
-  if (!host) return;
-  host = host.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
-  chrome.storage.local.get(["exclusions"], (data) => {
-    const exclusions = data.exclusions || [];
-    if (exclusions.includes(host)) { hostInput.value = ""; return; }
-    exclusions.push(host);
-    chrome.storage.local.set({ exclusions }, () => {
-      hostInput.value = "";
-      renderExclusionList(exclusions);
-    });
-  });
-}
-
-addBtn.addEventListener("click", addHost);
-hostInput.addEventListener("keydown", (e) => { if (e.key === "Enter") addHost(); });
-
-function removeHost(host) {
-  chrome.storage.local.get(["exclusions"], (data) => {
-    const exclusions = (data.exclusions || []).filter((h) => h !== host);
-    chrome.storage.local.set({ exclusions }, () => renderExclusionList(exclusions));
-  });
-}
-
-function renderExclusionList(exclusions) {
-  if (!exclusions.length) {
-    listEl.innerHTML = '<div class="empty">No exclusions — all tabs can be closed</div>';
-    return;
-  }
-  listEl.innerHTML = exclusions
-    .map((h) => `<div class="item"><span>${esc(h)}</span><button data-host="${escA(h)}">&times;</button></div>`)
-    .join("");
-  listEl.querySelectorAll("button[data-host]").forEach((btn) => {
-    btn.addEventListener("click", () => removeHost(btn.dataset.host));
-  });
-}
-
-// ── Closed Tabs History ──
-const closedSection = document.getElementById("closedSection");
-
-function loadClosedTabs() {
-  chrome.storage.local.get(["closed_tabs"], (data) => {
-    const closed = data.closed_tabs || [];
-    if (!closed.length) {
-      closedSection.innerHTML = "";
-      return;
-    }
-    closedSection.innerHTML = `
-      <div class="closed-header">
-        <h2>Recently Closed</h2>
-        <button id="clearClosed">Clear</button>
-      </div>
-    ` + closed.map((t, i) => `
-      <div class="closed-item" data-url="${escA(t.url)}" data-idx="${i}">
-        ${t.favIconUrl ? `<img class="favicon" src="${escA(t.favIconUrl)}" onerror="this.style.display='none'">` : '<div class="favicon"></div>'}
-        <span class="closed-title" title="${escA(t.url)}">${esc(t.title)}</span>
-        <span class="closed-time">${timeAgo(t.time)}</span>
-        <button class="reopen" title="Re-open">↗</button>
-      </div>
-    `).join("");
-
-    document.getElementById("clearClosed").addEventListener("click", () => {
-      chrome.storage.local.remove("closed_tabs", loadClosedTabs);
-    });
-
-    closedSection.querySelectorAll(".closed-item").forEach((item) => {
-      item.addEventListener("click", () => {
-        chrome.tabs.create({ url: item.dataset.url });
-      });
-    });
-  });
-}
-
-function timeAgo(ts) {
-  const diff = Date.now() - ts;
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return mins + "m ago";
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return hrs + "h ago";
-  return Math.floor(hrs / 24) + "d ago";
-}
-
-loadClosedTabs();
-*/
 
 // ═══════════════════════════════════
 //  Cookie Editor
