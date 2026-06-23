@@ -10,7 +10,6 @@ This fork targets Brave, Chromium, Microsoft Edge, and best-effort Firefox MV3 s
 - Removed Tab Cleaner runtime/UI and clears stale Tab Cleaner storage keys on install/startup.
 - Removed Google Search/Images injections, including Google Maps links and View Image.
 - Limited page access to `http://*/*` and `https://*/*` instead of `<all_urls>`.
-- Made cookie banner handling opt-in and reject/necessary/close-first instead of accept-all.
 - Redacted redirect query-string values before showing or copying redirect chains.
 - Consolidated page injections into one guarded content script.
 
@@ -22,7 +21,6 @@ This fork targets Brave, Chromium, Microsoft Edge, and best-effort Firefox MV3 s
 - 𝕏 X Dim Mode: custom dim palettes for X/Twitter.
 - 𝕏 X Unhook: hide X/Twitter sidebar panels and Explore links.
 - ⚡ JS Toggle: disable JavaScript per site where the browser exposes `contentSettings.javascript`.
-- 🚫 GDPR Cookie Banner Hider: opt-in banner hiding that prefers reject/necessary/close.
 - 🎨 Live CSS Editor: per-domain custom CSS with live preview.
 - 📺 YouTube Unhook: hide recommendations, Shorts shelves, sidebar suggestions, and end screens.
 - 🖼 Picture-in-Picture: pop the largest video on the current tab into PiP.

@@ -68,7 +68,6 @@ function switchToPage(page) {
   if (page === "darkmode") loadDarkMode();
   if (page === "xdim") loadXDim();
   if (page === "jstoggle") loadJsToggle();
-  if (page === "nocookie") loadNoCookie();
   if (page === "livecss") loadLiveCSS();
   if (page === "unhook") loadUnhook();
   if (page === "xunhook") loadXUnhook();
@@ -579,35 +578,6 @@ xdimHueSlider.addEventListener("input", () => {
 xdimHueSlider.addEventListener("change", async () => {
   xdimCustomHue = parseInt(xdimHueSlider.value);
   await chrome.storage.local.set({ xdim_customHue: xdimCustomHue });
-});
-
-// ═══════════════════════════════════
-//  Cookie Consent (GDPR) Dismisser
-// ═══════════════════════════════════
-const nocookieToggle = document.getElementById("nocookieToggle");
-const nocookieStatus = document.getElementById("nocookieStatus");
-
-async function loadNoCookie() {
-  const data = await chrome.storage.local.get(["nocookie_enabled"]);
-  const enabled = data.nocookie_enabled === true;
-  nocookieToggle.checked = enabled;
-  updateNoCookieUI(enabled);
-}
-
-function updateNoCookieUI(on) {
-  nocookieStatus.textContent = on ? "ON" : "OFF";
-  nocookieStatus.className = "status " + (on ? "on" : "off");
-}
-
-nocookieToggle.addEventListener("change", async () => {
-  const enabled = nocookieToggle.checked;
-  updateNoCookieUI(enabled);
-  await chrome.storage.local.set({ nocookie_enabled: enabled });
-
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (tab) {
-    chrome.tabs.sendMessage(tab.id, { type: "nocookie_toggle", enabled }).catch(() => {});
-  }
 });
 
 // ═══════════════════════════════════

@@ -355,20 +355,20 @@
       padding: 8px; line-height: 1.5;
     }
 
-    /* ── Cookie Consent (GDPR) ── */
-    .nocookie-big-toggle {
+    /* ── Shared Feature Panels ── */
+    .feature-big-toggle {
       display: flex; flex-direction: column; align-items: center;
       padding: 24px 0 16px; gap: 12px;
     }
-    .nocookie-big-toggle .ncicon {
+    .feature-big-toggle .feature-icon {
       font-size: 44px; line-height: 1;
     }
-    .nocookie-stats {
+    .feature-stats {
       padding: 10px 12px; background: #16213e;
       border-radius: 8px; margin-bottom: 10px;
       font-size: 12px; color: #888; line-height: 1.6;
     }
-    .nocookie-stats b { color: #e0e0e0; }
+    .feature-stats b { color: #e0e0e0; }
 
     /* ── Live CSS Editor ── */
     .livecss-host {
@@ -522,7 +522,6 @@
     <button data-page="xdim">𝕏 Dim</button>
     <button data-page="xunhook">𝕏 Unhook</button>
     <button data-page="jstoggle">⚡ JS</button>
-    <button data-page="nocookie">🚫 GDPR</button>
     <button data-page="livecss">🎨 CSS</button>
     <button data-page="unhook">📺 YT Unhook</button>
     <button data-page="pip">🖼 PiP</button>
@@ -681,32 +680,6 @@
     </div>
   </div>
 
-  <!-- ═══ Cookie Consent (GDPR) Page ═══ -->
-  <div class="page" id="page-nocookie">
-    <div class="page-body">
-      <div class="nocookie-big-toggle">
-        <div class="ncicon">🚫🍪</div>
-        <label class="big-switch">
-          <input type="checkbox" id="nocookieToggle">
-          <span class="big-slider"></span>
-        </label>
-        <div class="status off" id="nocookieStatus">OFF</div>
-      </div>
-
-      <div class="nocookie-stats">
-        <b>Privacy-first cookie banner hider</b><br>
-        Off by default. When enabled, hides banners and prefers reject, decline,
-        necessary-only, or close buttons for common consent frameworks:
-        OneTrust, CookieBot, Didomi, Quantcast, GDPR plugins, and more.
-      </div>
-
-      <div class="xdim-note">
-        Toggle on per session when you want it.<br>
-        It avoids accept-all actions.
-      </div>
-    </div>
-  </div>
-
   <!-- ═══ Live CSS Editor Page ═══ -->
   <div class="page" id="page-livecss">
     <div class="page-body">
@@ -795,8 +768,8 @@
   <!-- ═══ JSON Formatter Page ═══ -->
   <div class="page" id="page-jsonformat">
     <div class="page-body">
-      <div class="nocookie-big-toggle">
-        <div class="ncicon">{&thinsp;}</div>
+      <div class="feature-big-toggle">
+        <div class="feature-icon">{&thinsp;}</div>
         <label class="big-switch">
           <input type="checkbox" id="jsonformatToggle" checked>
           <span class="big-slider"></span>
@@ -804,7 +777,7 @@
         <div class="status on" id="jsonformatStatus">ON</div>
       </div>
 
-      <div class="nocookie-stats">
+      <div class="feature-stats">
         <b>Auto-formats JSON responses</b><br>
         Detects pure JSON pages and displays them with syntax highlighting,
         collapsible sections, and a dark theme. Copy or view raw with one click.

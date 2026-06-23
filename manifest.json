@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "🚀 SuperLevels Privacy Fork",
   "version": "2.1",
-  "description": "Privacy-hardened SuperLevels fork with dark mode, cookie editor, redirect tracer, live CSS editor, X/Twitter focus tools, JS toggle, GDPR banner hider, YouTube unhook, JSON formatter, and picture-in-picture.",
+  "description": "Privacy-hardened SuperLevels fork with dark mode, cookie editor, redirect tracer, live CSS editor, X/Twitter focus tools, JS toggle, YouTube unhook, JSON formatter, and picture-in-picture.",
   "permissions": ["storage", "cookies", "webRequest", "webNavigation", "contentSettings", "scripting"],
   "host_permissions": ["http://*/*", "https://*/*"],
   "content_security_policy": {
