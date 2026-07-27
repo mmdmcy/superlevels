@@ -165,5 +165,112 @@ function cleanupDeprecatedPrivateData() {
   chrome.storage.local.remove(DEPRECATED_PRIVATE_KEYS).catch(() => {});
 }
 
+// ═══════════════════════════════════
+//  Chromium tab-audio capture
+// ═══════════════════════════════════
+const OFFSCREEN_DOCUMENT = "offscreen.html";
+let creatingOffscreenDocument = null;
+
+function hasChromiumTabCapture() {
+  return Boolean(
+    chrome.offscreen?.createDocument &&
+    chrome.runtime?.getContexts &&
+    chrome.tabCapture?.getMediaStreamId
+  );
+}
+
+async function findOffscreenDocument() {
+  if (!chrome.runtime?.getContexts) return false;
+  const documentUrl = chrome.runtime.getURL(OFFSCREEN_DOCUMENT);
+  const contexts = await chrome.runtime.getContexts({
+    contextTypes: ["OFFSCREEN_DOCUMENT"],
+    documentUrls: [documentUrl],
+  });
+  return contexts.length > 0;
+}
+
+async function ensureOffscreenDocument() {
+  if (await findOffscreenDocument()) return;
+  if (!creatingOffscreenDocument) {
+    creatingOffscreenDocument = chrome.offscreen.createDocument({
+      url: OFFSCREEN_DOCUMENT,
+      reasons: ["USER_MEDIA", "AUDIO_PLAYBACK"],
+      justification: "Boost and replay audio captured from the active tab.",
+    });
+  }
+
+  try {
+    await creatingOffscreenDocument;
+  } finally {
+    creatingOffscreenDocument = null;
+  }
+}
+
+async function sendToOffscreen(message) {
+  return chrome.runtime.sendMessage({
+    ...message,
+    target: "superlevels-offscreen",
+  });
+}
+
+async function setCapturedTabVolume(tabId, percent) {
+  if (!hasChromiumTabCapture()) {
+    return { supported: false };
+  }
+
+  const normalizedPercent = Math.max(100, Math.min(500, Number(percent) || 100));
+  const hasDocument = await findOffscreenDocument();
+
+  if (normalizedPercent === 100) {
+    if (!hasDocument) {
+      return { supported: true, active: false, percent: normalizedPercent };
+    }
+    return sendToOffscreen({
+      type: "volume_capture_stop",
+      tabId,
+      percent: normalizedPercent,
+    });
+  }
+
+  if (!hasDocument) await ensureOffscreenDocument();
+
+  const existing = await sendToOffscreen({
+    type: "volume_capture_query",
+    tabId,
+  });
+  if (existing?.active) {
+    return sendToOffscreen({
+      type: "volume_capture_gain",
+      tabId,
+      percent: normalizedPercent,
+    });
+  }
+
+  const streamId = await chrome.tabCapture.getMediaStreamId({
+    targetTabId: tabId,
+  });
+  return sendToOffscreen({
+    type: "volume_capture_start",
+    tabId,
+    percent: normalizedPercent,
+    streamId,
+  });
+}
+
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.type !== "volume_capture_set") return undefined;
+
+  setCapturedTabVolume(msg.tabId, msg.percent)
+    .then(sendResponse)
+    .catch((err) => {
+      sendResponse({
+        supported: hasChromiumTabCapture(),
+        active: false,
+        error: err?.message || "Could not capture this tab's audio.",
+      });
+    });
+  return true;
+});
+
 cleanupDeprecatedPrivateData();
 chrome.runtime.onInstalled.addListener(cleanupDeprecatedPrivateData);

@@ -71,6 +71,7 @@ function switchToPage(page) {
   if (page === "livecss") loadLiveCSS();
   if (page === "unhook") loadUnhook();
   if (page === "xunhook") loadXUnhook();
+  if (page === "volume") loadVolume();
   if (page === "jsonformat") loadJsonFormat();
   chrome.storage.local.set({ last_tab: page }).catch(() => {});
   return true;
@@ -819,6 +820,118 @@ jsToggle.addEventListener("change", async () => {
   } finally {
     if (!failed) jsToggle.disabled = false;
   }
+});
+
+// ═══════════════════════════════════
+//  Volume Booster
+// ═══════════════════════════════════
+const volumeSlider = document.getElementById("volumeSlider");
+const volumeValue = document.getElementById("volumeValue");
+const volumeHost = document.getElementById("volumeHost");
+const volumeStatus = document.getElementById("volumeStatus");
+const volumeReset = document.getElementById("volumeReset");
+
+let volumeTab = null;
+let volumeStorageKey = "";
+let volumeApplyTimer = null;
+
+function updateVolumeLabel(percent) {
+  volumeValue.textContent = `${percent}%`;
+}
+
+function showVolumeStatus(message, kind = "") {
+  volumeStatus.textContent = message;
+  volumeStatus.className = `volume-status${kind ? ` ${kind}` : ""}`;
+}
+
+async function loadVolume() {
+  [volumeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!volumeTab?.url || !/^https?:/i.test(volumeTab.url)) {
+    volumeStorageKey = "";
+    volumeHost.textContent = "This page cannot be modified";
+    volumeSlider.disabled = true;
+    volumeReset.disabled = true;
+    showVolumeStatus("Open a normal website with audio or video.", "err");
+    return;
+  }
+
+  const host = new URL(volumeTab.url).hostname;
+  volumeStorageKey = `volume_boost_${host}`;
+  volumeHost.textContent = host;
+  volumeSlider.disabled = false;
+  volumeReset.disabled = false;
+
+  const data = await chrome.storage.local.get([volumeStorageKey]);
+  const percent = Math.max(100, Math.min(500, Number(data[volumeStorageKey]) || 100));
+  volumeSlider.value = String(percent);
+  updateVolumeLabel(percent);
+  await applyVolume(percent, false);
+}
+
+async function applyVolume(percent, persist = true) {
+  if (!volumeTab?.id || !volumeStorageKey) return;
+  updateVolumeLabel(percent);
+
+  if (persist) {
+    await chrome.storage.local.set({ [volumeStorageKey]: percent });
+  }
+
+  try {
+    const captureResult = await chrome.runtime.sendMessage({
+      type: "volume_capture_set",
+      tabId: volumeTab.id,
+      percent,
+    });
+
+    if (captureResult?.supported) {
+      if (captureResult.error) {
+        showVolumeStatus(captureResult.error, "err");
+      } else if (percent === 100) {
+        showVolumeStatus("Normal volume for this tab.", "ok");
+      } else if (captureResult.active) {
+        showVolumeStatus(`Brave Origin tab audio boosted to ${percent}%.`, "ok");
+      } else {
+        showVolumeStatus("Could not start tab-audio capture.", "err");
+      }
+      return;
+    }
+
+    const result = await chrome.tabs.sendMessage(volumeTab.id, {
+      type: "volume_set",
+      percent,
+    });
+
+    if (!result?.ok) {
+      showVolumeStatus(result?.error || "Could not process media on this page.", "err");
+      return;
+    }
+
+    if (percent === 100) {
+      showVolumeStatus("Normal volume for this site.", "ok");
+    } else if (result.mediaCount === 0) {
+      showVolumeStatus("Ready—start audio or video on this page.");
+    } else {
+      const noun = result.mediaCount === 1 ? "media element" : "media elements";
+      showVolumeStatus(`Applied to ${result.boostedCount}/${result.mediaCount} ${noun}.`, "ok");
+    }
+  } catch (err) {
+    showVolumeStatus(
+      "Reload this tab after installing the extension, then try again.",
+      "err",
+    );
+  }
+}
+
+volumeSlider.addEventListener("input", () => {
+  const percent = Number(volumeSlider.value);
+  updateVolumeLabel(percent);
+  clearTimeout(volumeApplyTimer);
+  volumeApplyTimer = setTimeout(() => applyVolume(percent), 80);
+});
+
+volumeReset.addEventListener("click", () => {
+  volumeSlider.value = "100";
+  applyVolume(100);
 });
 
 // ═══════════════════════════════════

@@ -1,15 +1,26 @@
 {
   "manifest_version": 3,
   "name": "🚀 SuperLevels Privacy Fork",
-  "version": "2.1",
-  "description": "Privacy-hardened SuperLevels fork with dark mode, cookie editor, redirect tracer, live CSS editor, X/Twitter focus tools, JS toggle, YouTube unhook, JSON formatter, and picture-in-picture.",
-  "permissions": ["storage", "cookies", "webRequest", "webNavigation", "contentSettings", "scripting"],
+  "version": "2.3",
+  "description": "Privacy-hardened browser tools with per-site volume boosting, dark mode, cookie editing, redirect tracing, focus tools, JSON formatting, and picture-in-picture.",
+  "minimum_chrome_version": "116",
+  "permissions": ["storage", "cookies", "webRequest", "webNavigation", "contentSettings", "scripting", "activeTab", "tabCapture", "offscreen"],
   "host_permissions": ["http://*/*", "https://*/*"],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'"
   },
   "background": {
+    "scripts": ["background.js"],
     "service_worker": "background.js"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "superlevels@mmdmcy.local",
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
   },
   "action": {
     "default_popup": "popup.html",

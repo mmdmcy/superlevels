@@ -23,6 +23,114 @@
   }
 
   (() => {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    const usesPageAudioFallback = /\bFirefox\//.test(navigator.userAgent);
+    const storageKey = `volume_boost_${contentHost}`;
+    const connectedMedia = new WeakMap();
+    let audioContext = null;
+    let gainNode = null;
+    let observer = null;
+    let currentPercent = 100;
+    let lastError = "";
+
+    function clampPercent(value) {
+      return Math.max(100, Math.min(500, Number(value) || 100));
+    }
+
+    function ensureGraph() {
+      if (!AudioContextClass) {
+        lastError = "Web Audio is unavailable in this browser.";
+        return false;
+      }
+      if (audioContext) return true;
+
+      try {
+        audioContext = new AudioContextClass();
+        gainNode = audioContext.createGain();
+        gainNode.connect(audioContext.destination);
+        observer = new MutationObserver(() => scanMedia());
+        observer.observe(document.documentElement, { childList: true, subtree: true });
+        return true;
+      } catch (err) {
+        lastError = err?.message || "Could not start Web Audio.";
+        return false;
+      }
+    }
+
+    function connectMedia(media) {
+      if (connectedMedia.has(media)) return true;
+      try {
+        const source = audioContext.createMediaElementSource(media);
+        source.connect(gainNode);
+        connectedMedia.set(media, source);
+        return true;
+      } catch (err) {
+        lastError = err?.message || "This player refused Web Audio processing.";
+        return false;
+      }
+    }
+
+    function scanMedia() {
+      const media = Array.from(document.querySelectorAll("audio, video"));
+      let boostedCount = 0;
+
+      if (audioContext) {
+        for (const element of media) {
+          if (connectMedia(element)) boostedCount += 1;
+        }
+      }
+
+      return { mediaCount: media.length, boostedCount };
+    }
+
+    function setVolume(percent) {
+      currentPercent = clampPercent(percent);
+      lastError = "";
+
+      if (currentPercent === 100 && !audioContext) {
+        const mediaCount = document.querySelectorAll("audio, video").length;
+        return { ok: true, percent: currentPercent, mediaCount, boostedCount: 0 };
+      }
+
+      if (!ensureGraph()) {
+        return { ok: false, error: lastError };
+      }
+
+      gainNode.gain.setValueAtTime(currentPercent / 100, audioContext.currentTime);
+      const counts = scanMedia();
+      audioContext.resume().catch(() => {});
+
+      return {
+        ok: counts.mediaCount === 0 || counts.boostedCount > 0,
+        error: counts.mediaCount > 0 && counts.boostedCount === 0 ? lastError : "",
+        percent: currentPercent,
+        ...counts,
+      };
+    }
+
+    document.addEventListener("play", () => {
+      if (currentPercent !== 100 && ensureGraph()) {
+        scanMedia();
+        audioContext.resume().catch(() => {});
+      }
+    }, true);
+
+    chrome.storage.local.get([storageKey], (data) => {
+      const saved = clampPercent(data[storageKey]);
+      if (usesPageAudioFallback && saved !== 100) setVolume(saved);
+    });
+
+    chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+      if (msg.type === "volume_set") {
+        sendResponse(setVolume(msg.percent));
+      }
+      if (msg.type === "volume_query") {
+        sendResponse({ ok: true, percent: currentPercent, ...scanMedia() });
+      }
+    });
+  })();
+
+  (() => {
     const STYLE_ID = "superlevels-darkmode";
 
     function buildCSS(brightness) {
