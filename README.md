@@ -17,8 +17,9 @@ This fork targets Firefox, Brave, Chromium, and Microsoft Edge. It intentionally
 
 - 🍪 Cookie Editor: view, edit, add, delete, and export cookies for the current site.
 - 🔀 Redirect Tracer: inspect redacted redirect chains for the active tab.
-- 🌙 Dark Mode: per-site or global CSS filter dark mode with brightness control.
-- 𝕏 X Dim Mode: custom dim palettes for X/Twitter.
+- 🌙 Dark Mode: per-site or global color-inverting dark mode.
+- ☀ Brightness: reduce any site's brightness from 100% down to 20% without enabling Dark Mode, saved per site.
+- 𝕏 X Theme: custom dim palettes for X/Twitter.
 - 𝕏 X Unhook: hide X/Twitter sidebar panels and Explore links.
 - ⚡ JS Toggle: disable JavaScript per site where the browser exposes `contentSettings.javascript`.
 - 🎨 Live CSS Editor: per-domain custom CSS with live preview.

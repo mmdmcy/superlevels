@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "🚀 SuperLevels Privacy Fork",
-  "version": "2.3",
-  "description": "Privacy-hardened browser tools with per-site volume boosting, dark mode, cookie editing, redirect tracing, focus tools, JSON formatting, and picture-in-picture.",
+  "version": "2.5",
+  "description": "Privacy-hardened browser tools with per-site page dimming, volume boosting, dark mode, cookie editing, redirect tracing, focus tools, and picture-in-picture.",
   "minimum_chrome_version": "116",
   "permissions": ["storage", "cookies", "webRequest", "webNavigation", "contentSettings", "scripting", "activeTab", "tabCapture", "offscreen"],
   "host_permissions": ["http://*/*", "https://*/*"],

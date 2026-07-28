@@ -132,12 +132,20 @@
 
   (() => {
     const STYLE_ID = "superlevels-darkmode";
+    const host = location.hostname;
+    const darkStorageKey = "darkmode_" + host;
+    const dimStorageKey = "page_dim_" + host;
+    const globalKey = "darkmode_global";
+    let darkEnabled = false;
+    let dimBrightness = 100;
 
-    function buildCSS(brightness) {
-      const b = brightness / 100;
+    function buildCSS() {
+      const b = dimBrightness / 100;
       return `
+        html.superlevels-visual-filter {
+          filter: ${darkEnabled ? "invert(1) hue-rotate(180deg) " : ""}brightness(${b}) !important;
+        }
         html.superlevels-dark {
-          filter: invert(1) hue-rotate(180deg) brightness(${b}) !important;
           background: #fff !important;
         }
         html.superlevels-dark img,
@@ -158,44 +166,56 @@
       `;
     }
 
-    function applyDarkMode(enabled, brightness) {
+    function renderVisualFilter() {
       let style = document.getElementById(STYLE_ID);
-      if (enabled) {
+      const active = darkEnabled || dimBrightness < 100;
+      document.documentElement.classList.toggle("superlevels-dark", darkEnabled);
+      document.documentElement.classList.toggle("superlevels-visual-filter", active);
+
+      if (active) {
         if (!style) {
           style = document.createElement("style");
           style.id = STYLE_ID;
           (document.head || document.documentElement).appendChild(style);
         }
-        style.textContent = buildCSS(brightness);
-        document.documentElement.classList.add("superlevels-dark");
+        style.textContent = buildCSS();
       } else {
-        document.documentElement.classList.remove("superlevels-dark");
         if (style) style.remove();
       }
     }
 
-    const host = location.hostname;
-    const storageKey = "darkmode_" + host;
-    const globalKey = "darkmode_global";
+    function applyDarkMode(enabled) {
+      darkEnabled = enabled;
+      renderVisualFilter();
+    }
 
-    chrome.storage.local.get([storageKey, globalKey, "darkmode_brightness"], (data) => {
-      const siteState = data[storageKey];
+    function applyPageDim(brightness) {
+      dimBrightness = Math.max(20, Math.min(100, Number(brightness) || 100));
+      renderVisualFilter();
+    }
+
+    chrome.storage.local.get([darkStorageKey, dimStorageKey, globalKey], (data) => {
+      const siteState = data[darkStorageKey];
       const globalState = data[globalKey];
-      const enabled = siteState !== undefined ? siteState : (globalState || false);
-      const brightness = data.darkmode_brightness || 100;
-      if (enabled) applyDarkMode(true, brightness);
+      darkEnabled = siteState !== undefined ? siteState : (globalState || false);
+      dimBrightness = Math.max(20, Math.min(100, Number(data[dimStorageKey]) || 100));
+      renderVisualFilter();
     });
 
     chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       if (msg.type === "darkmode_toggle") {
-        applyDarkMode(msg.enabled, msg.brightness || 100);
+        applyDarkMode(msg.enabled);
         sendResponse({ ok: true });
       }
       if (msg.type === "darkmode_query") {
         sendResponse({
-          active: document.documentElement.classList.contains("superlevels-dark"),
+          active: darkEnabled,
           host,
         });
+      }
+      if (msg.type === "page_dim_set") {
+        applyPageDim(msg.brightness);
+        sendResponse({ ok: true, brightness: dimBrightness });
       }
     });
   })();

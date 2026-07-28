@@ -24,8 +24,8 @@
       flex-shrink: 0;
     }
     .nav button {
-      width: calc(100% / 7);
-      padding: 9px 2px;
+      width: 25%;
+      padding: 8px 4px;
       background: none;
       border: none;
       color: #888;
@@ -232,25 +232,6 @@
     .dark-host {
       text-align: center; font-size: 12px; color: #666;
       margin-bottom: 16px;
-    }
-    .dark-section {
-      padding: 10px 12px; background: #16213e;
-      border-radius: 8px; margin-bottom: 10px;
-    }
-    .dark-section label {
-      display: block; font-size: 12px; color: #888;
-      margin-bottom: 6px;
-    }
-    .dark-section .range-row {
-      display: flex; align-items: center; gap: 10px;
-    }
-    .dark-section input[type="range"] {
-      flex: 1; accent-color: #e94560;
-      height: 4px;
-    }
-    .dark-section .range-val {
-      font-size: 12px; color: #aaa; min-width: 36px;
-      text-align: right;
     }
     .dark-scope {
       display: flex; gap: 6px; margin-bottom: 10px;
@@ -481,6 +462,22 @@
     .volume-status.ok { color: #4caf50; }
     .volume-status.err { color: #e94560; }
 
+    /* ── Brightness ── */
+    .dim-preview {
+      width: 116px; height: 72px; border: 1px solid #39415f;
+      border-radius: 8px; background: #f4efe3; position: relative;
+      overflow: hidden; box-shadow: 0 10px 24px rgba(0,0,0,0.25);
+    }
+    .dim-preview::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, #d96b5f 0 30%, #e8be64 30% 54%, #6689ad 54%);
+    }
+    .dim-preview::after {
+      content: ''; position: absolute; inset: 0;
+      background: rgba(0,0,0,var(--dim-overlay, 0));
+      transition: background 0.08s linear;
+    }
+
     /* ── Picture-in-Picture ── */
     .pip-center {
       display: flex; flex-direction: column; align-items: center;
@@ -556,15 +553,16 @@
   <div class="nav">
     <button class="active" data-page="cookies">🍪 Cookies</button>
     <button data-page="redirects">🔀 Redirects</button>
-    <button data-page="darkmode">🌙 Dark</button>
-    <button data-page="xdim">𝕏 Dim</button>
-    <button data-page="xunhook">𝕏 Unhook</button>
-    <button data-page="jstoggle">⚡ JS</button>
-    <button data-page="livecss">🎨 CSS</button>
-    <button data-page="unhook">📺 YT Unhook</button>
+    <button data-page="darkmode">🌙 Dark Mode</button>
+    <button data-page="pagedim">☀ Brightness</button>
+    <button data-page="xdim">𝕏 X Theme</button>
+    <button data-page="xunhook">𝕏 X Cleanup</button>
+    <button data-page="jstoggle">⚡ JavaScript</button>
+    <button data-page="livecss">🎨 CSS Editor</button>
+    <button data-page="unhook">📺 YouTube</button>
     <button data-page="volume">🔊 Volume</button>
-    <button data-page="pip">🖼 PiP</button>
-    <button data-page="jsonformat">{} JSON</button>
+    <button data-page="pip">🖼 Picture-in-Picture</button>
+    <button data-page="jsonformat">{} JSON Viewer</button>
   </div>
 
   <!-- ═══ Cookie Editor Page ═══ -->
@@ -634,17 +632,29 @@
         <button id="scopeGlobal">All sites</button>
       </div>
 
-      <div class="dark-section">
-        <label>Brightness</label>
-        <div class="range-row">
-          <input type="range" id="darkBrightness" min="60" max="120" value="100">
-          <span class="range-val" id="darkBrightnessVal">100%</span>
-        </div>
-      </div>
     </div>
   </div>
 
-  <!-- ═══ X Dim Mode Page ═══ -->
+  <!-- ═══ Brightness ═══ -->
+  <div class="page" id="page-pagedim">
+    <div class="page-body">
+      <div class="volume-center">
+        <div class="dim-preview" id="pageDimPreview"></div>
+        <div class="volume-value" id="pageDimValue">100%</div>
+        <div class="volume-host" id="pageDimHost">Loading...</div>
+      </div>
+
+      <div class="volume-controls">
+        <input type="range" id="pageDimSlider" min="20" max="100" step="5" value="100">
+        <div class="volume-scale"><span>20%</span><span>60%</span><span>100%</span></div>
+        <button class="volume-reset" id="pageDimReset">Reset to 100%</button>
+      </div>
+
+      <div class="volume-status" id="pageDimStatus">Adjust this site's brightness without enabling Dark Mode.</div>
+    </div>
+  </div>
+
+  <!-- ═══ X Theme Page ═══ -->
   <div class="page" id="page-xdim">
     <div class="page-body">
       <div class="xdim-big-toggle">
@@ -682,12 +692,12 @@
           <span class="dot"></span> Preview
         </div>
         <div class="xdim-preview-tweet">
-          The quick brown fox jumps over the lazy dog. This is how text looks with X Dim mode.
+          The quick brown fox jumps over the lazy dog. This is how text looks with the selected X theme.
         </div>
       </div>
 
       <div class="xdim-note">
-        Applies a custom dim theme to X / Twitter.<br>
+        Applies a custom theme to X / Twitter.<br>
         Choose a theme or set a custom hue for less eye strain.
       </div>
     </div>

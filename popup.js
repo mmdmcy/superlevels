@@ -66,6 +66,7 @@ function switchToPage(page) {
   if (page === "cookies") loadCookies();
   if (page === "redirects") loadRedirects();
   if (page === "darkmode") loadDarkMode();
+  if (page === "pagedim") loadPageDim();
   if (page === "xdim") loadXDim();
   if (page === "jstoggle") loadJsToggle();
   if (page === "livecss") loadLiveCSS();
@@ -406,8 +407,6 @@ document.getElementById("btnRedirectCopy").addEventListener("click", async () =>
 const darkToggle = document.getElementById("darkToggle");
 const darkStatus = document.getElementById("darkStatus");
 const darkHostEl = document.getElementById("darkHost");
-const darkBrightness = document.getElementById("darkBrightness");
-const darkBrightnessVal = document.getElementById("darkBrightnessVal");
 const scopeSite = document.getElementById("scopeSite");
 const scopeGlobal = document.getElementById("scopeGlobal");
 
@@ -422,11 +421,7 @@ async function loadDarkMode() {
   darkHostEl.textContent = darkHost ? `Current site: ${darkHost}` : "";
 
   const siteKey = "darkmode_" + darkHost;
-  const data = await chrome.storage.local.get([siteKey, "darkmode_global", "darkmode_brightness"]);
-
-  const brightness = data.darkmode_brightness || 100;
-  darkBrightness.value = brightness;
-  darkBrightnessVal.textContent = brightness + "%";
+  const data = await chrome.storage.local.get([siteKey, "darkmode_global"]);
 
   const siteState = data[siteKey];
   const globalState = data.darkmode_global || false;
@@ -443,7 +438,6 @@ function updateDarkStatus(on) {
 
 async function applyDark() {
   const enabled = darkToggle.checked;
-  const brightness = parseInt(darkBrightness.value);
   updateDarkStatus(enabled);
 
   // Save preference
@@ -453,25 +447,17 @@ async function applyDark() {
     const siteKey = "darkmode_" + darkHost;
     await chrome.storage.local.set({ [siteKey]: enabled });
   }
-  await chrome.storage.local.set({ darkmode_brightness: brightness });
-
   // Send to active tab's content script
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (tab) {
     chrome.tabs.sendMessage(tab.id, {
       type: "darkmode_toggle",
       enabled,
-      brightness,
     }).catch(() => {});
   }
 }
 
 darkToggle.addEventListener("change", applyDark);
-
-darkBrightness.addEventListener("input", () => {
-  darkBrightnessVal.textContent = darkBrightness.value + "%";
-});
-darkBrightness.addEventListener("change", applyDark);
 
 scopeSite.addEventListener("click", () => {
   darkScope = "site";
@@ -482,6 +468,83 @@ scopeGlobal.addEventListener("click", () => {
   darkScope = "global";
   scopeGlobal.classList.add("active");
   scopeSite.classList.remove("active");
+});
+
+// ═══════════════════════════════════
+//  Brightness
+// ═══════════════════════════════════
+const pageDimSlider = document.getElementById("pageDimSlider");
+const pageDimValue = document.getElementById("pageDimValue");
+const pageDimHost = document.getElementById("pageDimHost");
+const pageDimPreview = document.getElementById("pageDimPreview");
+const pageDimStatus = document.getElementById("pageDimStatus");
+const pageDimReset = document.getElementById("pageDimReset");
+
+let pageDimTab = null;
+let pageDimStorageKey = "";
+let pageDimApplyTimer = null;
+
+function updatePageDimLabel(brightness) {
+  pageDimValue.textContent = `${brightness}%`;
+  pageDimPreview.style.setProperty("--dim-overlay", String(1 - brightness / 100));
+}
+
+async function loadPageDim() {
+  [pageDimTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!pageDimTab?.url || !/^https?:/i.test(pageDimTab.url)) {
+    pageDimStorageKey = "";
+    pageDimHost.textContent = "This page cannot be modified";
+    pageDimSlider.disabled = true;
+    pageDimReset.disabled = true;
+    pageDimStatus.textContent = "Open a normal website to adjust its brightness.";
+    pageDimStatus.className = "volume-status err";
+    return;
+  }
+
+  const host = new URL(pageDimTab.url).hostname;
+  pageDimStorageKey = `page_dim_${host}`;
+  pageDimHost.textContent = host;
+  pageDimSlider.disabled = false;
+  pageDimReset.disabled = false;
+  pageDimStatus.textContent = "Saved for this site and applied on future visits.";
+  pageDimStatus.className = "volume-status";
+
+  const data = await chrome.storage.local.get([pageDimStorageKey]);
+  const brightness = Math.max(20, Math.min(100, Number(data[pageDimStorageKey]) || 100));
+  pageDimSlider.value = String(brightness);
+  updatePageDimLabel(brightness);
+}
+
+async function applyPageDim(brightness) {
+  if (!pageDimTab?.id || !pageDimStorageKey) return;
+  updatePageDimLabel(brightness);
+  await chrome.storage.local.set({ [pageDimStorageKey]: brightness });
+
+  try {
+    await chrome.tabs.sendMessage(pageDimTab.id, {
+      type: "page_dim_set",
+      brightness,
+    });
+    pageDimStatus.textContent = brightness === 100
+      ? "Normal brightness restored for this site."
+      : `This site will stay at ${brightness}% brightness.`;
+    pageDimStatus.className = "volume-status ok";
+  } catch {
+    pageDimStatus.textContent = "Reload this tab after updating the extension, then try again.";
+    pageDimStatus.className = "volume-status err";
+  }
+}
+
+pageDimSlider.addEventListener("input", () => {
+  const brightness = Number(pageDimSlider.value);
+  updatePageDimLabel(brightness);
+  clearTimeout(pageDimApplyTimer);
+  pageDimApplyTimer = setTimeout(() => applyPageDim(brightness), 50);
+});
+
+pageDimReset.addEventListener("click", () => {
+  pageDimSlider.value = "100";
+  applyPageDim(100);
 });
 
 // ═══════════════════════════════════
